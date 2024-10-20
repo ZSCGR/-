@@ -123,7 +123,7 @@
         <div class="switch">
             <input type="checkbox" id="toggleSwitch">
             <span class="slider" onclick="toggleSwitch()"></span>
-            <label class="slider-label" for="toggleSwitch">开启额外参数&o=2</label>
+            <label class="slider-label" for="toggleSwitch">反向</label>
         </div>
 
         <div class="switch">
@@ -220,6 +220,7 @@
                 city = cityInput; // 使用用户输入的城市
                 if (shouldOverwrite) {
                     localStorage.setItem('manualCity', city); // 将手动输入城市覆盖到本地
+                    displayLocalStorage(); // 更新显示
                 }
             } else if (!city) {
                 try {
