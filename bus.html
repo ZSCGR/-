@@ -227,6 +227,7 @@
                 try {
                     city = await fetchIPData(key); // 如果本地没有城市，调用第一个API
                     localStorage.setItem('defaultCity', city); // 将获取的默认城市保存到本地
+                    displayLocalStorage(); // 更新显示
                 } catch (error) {
                     document.getElementById('result').textContent = error;
                     return;
@@ -243,11 +244,10 @@
                 const data = await response.text(); // 假设返回的是纯文本
                 document.getElementById('busResult').textContent = `公交结果: ${data}`;
             } catch (error) {
-                document.getElementById('busResult').textContent = `公交请求失败: ${error}`;
+                document.getElementById('busResult').textContent = `错误: ${error}`;
             }
         }
 
-        // 初始化时显示本地存储的城市信息
         displayLocalStorage();
     </script>
 </body>
