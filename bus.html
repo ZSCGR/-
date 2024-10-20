@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IP位置信息与公交查询</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            max-width: 600px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            font-size: 16px;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px;
+            font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #result, #busResult {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: #fafafa;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .switch {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .switch input {
+            display: none;
+        }
+        .slider {
+            position: relative;
+            width: 50px;
+            height: 24px;
+            background-color: #ccc;
+            border-radius: 24px;
+            cursor: pointer;
+            transition: background-color 0.4s;
+        }
+        .slider::before {
+            content: '';
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            background-color: white;
+            border-radius: 50%;
+            top: 1px;
+            left: 1px;
+            transition: transform 0.4s;
+        }
+        input:checked + .slider {
+            background-color: #4CAF50;
+        }
+        input:checked + .slider::before {
+            transform: translateX(26px);
+        }
+        .slider-label {
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>IP位置信息与公交查询</h1>
+
+        <label for="keyInput">请输入key（可选）:</label>
+        <input type="text" id="keyInput" placeholder="请输入key" />
+
+        <label for="cityInput">请输入城市（可选）:</label>
+        <input type="text" id="cityInput" placeholder="城市名称" />
+
+        <label for="stationInput">请输入站点名称:</label>
+        <input type="text" id="stationInput" placeholder="站点名称" />
+
+        <div class="switch">
+            <input type="checkbox" id="toggleSwitch">
+            <span class="slider" onclick="toggleSwitch()"></span>
+            <label class="slider-label" for="toggleSwitch">开启额外参数&o=2</label>
+        </div>
+
+        <div class="switch">
+            <input type="checkbox" id="overwriteSwitch">
+            <span class="slider" onclick="toggleOverwriteSwitch()"></span>
+            <label class="slider-label" for="overwriteSwitch">使用并覆盖本地存储的地点</label>
+        </div>
+
+        <div class="switch">
+            <input type="checkbox" id="manualCitySwitch">
+            <span class="slider" onclick="toggleManualCitySwitch()"></span>
+            <label class="slider-label" for="manualCitySwitch">使用手动输入地点</label>
+        </div>
+
+        <button onclick="fetchBusData()">查询</button>
+
+        <div id="result"></div>
+        <div id="busResult"></div>
+    </div>
+
+    <script>
+        const defaultKey = '6J4BZ-IB4WZ-OAVXY-TWYZ7-FOJWH-WHF65'; // 内置默认key
+
+        function toggleSwitch() {
+            const toggle = document.getElementById('toggleSwitch');
+            toggle.checked = !toggle.checked;
+        }
+
+        function toggleOverwriteSwitch() {
+            const toggle = document.getElementById('overwriteSwitch');
+            toggle.checked = !toggle.checked;
+        }
+
+        function toggleManualCitySwitch() {
+            const toggle = document.getElementById('manualCitySwitch');
+            toggle.checked = !toggle.checked;
+        }
+
+        // 显示本地存储的城市信息
+        function displayLocalStorage() {
+            const defaultCity = localStorage.getItem('defaultCity') || '无默认存储的城市信息';
+            const manualCity = localStorage.getItem('manualCity') || '无手动输入的城市信息';
+            document.getElementById('result').textContent = `默认城市: ${defaultCity}\n手动输入城市: ${manualCity}`;
+        }
+
+        // 发送第一个API请求获取城市，并存储到本地
+        async function fetchIPData(key) {
+            const url = `https://apis.map.qq.com/ws/location/v1/ip?key=${key}&output=jsonp`;
+
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = url + '&callback=callbackFunc';
+                document.body.appendChild(script);
+
+                window.callbackFunc = function(response) {
+                    if (response.status === 0) {
+                        let city = response.result?.ad_info?.city || '未知城市';
+                        city = city.slice(0, -1); // 去掉最后一个字符
+                        resolve(city);
+                    } else {
+                        reject(`错误: ${response.message}`);
+                    }
+                };
+            });
+        }
+
+        // 从本地或API获取城市并发起公交请求
+        async function fetchBusData() {
+            let key = localStorage.getItem('key'); // 从本地存储获取key
+            if (!key) {
+                key = document.getElementById('keyInput').value.trim() || defaultKey; // 使用默认key或用户输入的key
+                localStorage.setItem('key', key); // 保存到本地
+            }
+
+            let station = document.getElementById('stationInput').value.trim();
+            let cityInput = document.getElementById('cityInput').value.trim();
+            const isExtraParam = document.getElementById('toggleSwitch').checked;
+            const shouldOverwrite = document.getElementById('overwriteSwitch').checked;
+            const useManualCity = document.getElementById('manualCitySwitch').checked;
+
+            if (!station) {
+                alert('请输入站点名称');
+                return;
+            }
+
+            // 自动添加“站”字
+            if (!station.endsWith('站')) {
+                station += '站';
+            }
+
+            let city = localStorage.getItem(useManualCity ? 'manualCity' : 'defaultCity');
+            
+            if (cityInput) {
+                city = cityInput; // 使用用户输入的城市
+                if (useManualCity) {
+                    localStorage.setItem('manualCity', city); // 将手动输入城市保存到本地
+                } else if (shouldOverwrite) {
+                    localStorage.setItem('defaultCity', city); // 将默认城市保存到本地
+                }
+            } else if (!city) {
+                try {
+                    city = await fetchIPData(key); // 如果本地没有城市，调用第一个API
+                    localStorage.setItem('defaultCity', city); // 将获取的默认城市保存到本地
+                } catch (error) {
+                    document.getElementById('result').textContent = error;
+                    return;
+                }
+            }
+
+            let url = `https://api.lolimi.cn/API/che/api.php?type=text&city=${city}&line=${station}`;
+            if (isExtraParam) {
+                url += `&o=2`;
+            }
+
+            try {
+                const response = await fetch(url);
+                const data = await response.text(); // 假设返回的是纯文本
+                document.getElementById('busResult').textContent = `公交结果: ${data}`;
+            } catch (error) {
+                document.getElementById('busResult').textContent = `公交请求失败: ${error}`;
+            }
+        }
+
+        // 初始化时显示本地存储的城市信息
+        displayLocalStorage();
+    </script>
+</body>
+</html>
