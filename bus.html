@@ -129,7 +129,7 @@
         <div class="switch">
             <input type="checkbox" id="overwriteSwitch">
             <span class="slider" onclick="toggleOverwriteSwitch()"></span>
-            <label class="slider-label" for="overwriteSwitch">使用并覆盖本地存储的地点</label>
+            <label class="slider-label" for="overwriteSwitch">覆盖手动输入的地点</label>
         </div>
 
         <div class="switch">
@@ -218,10 +218,8 @@
             
             if (cityInput) {
                 city = cityInput; // 使用用户输入的城市
-                if (useManualCity) {
-                    localStorage.setItem('manualCity', city); // 将手动输入城市保存到本地
-                } else if (shouldOverwrite) {
-                    localStorage.setItem('defaultCity', city); // 将默认城市保存到本地
+                if (shouldOverwrite) {
+                    localStorage.setItem('manualCity', city); // 将手动输入城市覆盖到本地
                 }
             } else if (!city) {
                 try {
